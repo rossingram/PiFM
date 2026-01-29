@@ -145,37 +145,29 @@ def save_presets():
 def detect_rtl_sdr():
     """Detect if RTL-SDR is available"""
     try:
-        # Try without sudo first
         result = subprocess.run(
             ['rtl_test', '-t'],
             capture_output=True,
-            timeout=5,
-            text=True
+            timeout=5
         )
-        output = result.stdout + result.stderr
+        # Decode with error handling for non-UTF-8 output
+        try:
+            output = result.stdout.decode('utf-8', errors='replace') + result.stderr.decode('utf-8', errors='replace')
+        except (UnicodeDecodeError, AttributeError):
+            # Fallback: try latin-1 or ignore errors
+            output = result.stdout.decode('latin-1', errors='replace') + result.stderr.decode('latin-1', errors='replace')
         
-        # Check for successful detection - device found AND tuner found
-        # Look for "Found X device(s)" and tuner identification
+        # Check for successful detection - device found
+        # Look for "Found X device(s)" - this indicates device is present
         if 'Found' in output and 'device' in output.lower():
             # Check if a tuner was actually found (R820T, E4000, etc.)
+            # Even if there are errors, if we see "Found" and tuner info, device exists
             if any(tuner in output for tuner in ['R820T', 'E4000', 'tuner', 'Supported gain']):
                 return True
-            # If device found but no tuner, still consider it detected
-            # (might be initialization issue, but device exists)
+            # If device found but no tuner info, still consider it detected
+            # (device exists, initialization might have issues but we can try)
             return True
         
-        # If that didn't work, try with sudo (for permission issues)
-        result = subprocess.run(
-            ['sudo', 'rtl_test', '-t'],
-            capture_output=True,
-            timeout=5,
-            text=True
-        )
-        output = result.stdout + result.stderr
-        if 'Found' in output and 'device' in output.lower():
-            if any(tuner in output for tuner in ['R820T', 'E4000', 'tuner', 'Supported gain']):
-                return True
-            return True
         return False
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError) as e:
         logger.debug(f"RTL-SDR detection error: {e}")
