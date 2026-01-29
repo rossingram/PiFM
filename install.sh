@@ -80,16 +80,37 @@ fi
 echo "📋 Copying files..."
 if [ -d "$SCRIPT_DIR/backend" ] && [ -f "$SCRIPT_DIR/backend/fm_receiver.py" ]; then
     # Local installation - copy from repo
+    echo "📁 Copying from local repository..."
     cp -r "$SCRIPT_DIR/backend"/* "$INSTALL_DIR/backend/" 2>/dev/null || true
     cp -r "$SCRIPT_DIR/frontend"/* "$INSTALL_DIR/frontend/" 2>/dev/null || true
 else
     # Remote installation via curl - download from GitHub
     echo "📥 Downloading files from GitHub..."
-    curl -sSL -o "$INSTALL_DIR/backend/fm_receiver.py" \
-        https://raw.githubusercontent.com/rossingram/FM-Go/main/backend/fm_receiver.py
-    curl -sSL -o "$INSTALL_DIR/frontend/index.html" \
-        https://raw.githubusercontent.com/rossingram/FM-Go/main/frontend/index.html
-    chmod +x "$INSTALL_DIR/backend/fm_receiver.py"
+    if curl -sSL -f -o "$INSTALL_DIR/backend/fm_receiver.py" \
+        https://raw.githubusercontent.com/rossingram/FM-Go/main/backend/fm_receiver.py; then
+        echo "✅ Downloaded backend/fm_receiver.py"
+        chmod +x "$INSTALL_DIR/backend/fm_receiver.py"
+    else
+        echo "❌ Failed to download backend file"
+        exit 1
+    fi
+    
+    if curl -sSL -f -o "$INSTALL_DIR/frontend/index.html" \
+        https://raw.githubusercontent.com/rossingram/FM-Go/main/frontend/index.html; then
+        echo "✅ Downloaded frontend/index.html"
+    else
+        echo "❌ Failed to download frontend file"
+        exit 1
+    fi
+fi
+
+# Verify files were copied
+if [ ! -f "$INSTALL_DIR/backend/fm_receiver.py" ]; then
+    echo "❌ Error: Backend file not found after copy/download!"
+    exit 1
+fi
+if [ ! -f "$INSTALL_DIR/frontend/index.html" ]; then
+    echo "⚠️  Warning: Frontend file not found, but continuing..."
 fi
 
 # Create Python virtual environment
