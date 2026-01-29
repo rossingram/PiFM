@@ -71,24 +71,41 @@ echo "📁 Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"/{backend,frontend,config}
 
+# Check if this is a reinstallation
+if [ -d "$INSTALL_DIR/backend" ] && [ -f "$INSTALL_DIR/backend/fm_receiver.py" ]; then
+    echo "ℹ️  Detected existing installation. Reinstalling..."
+fi
+
 # Copy files
 echo "📋 Copying files..."
-if [ -d "$SCRIPT_DIR/backend" ]; then
+if [ -d "$SCRIPT_DIR/backend" ] && [ -f "$SCRIPT_DIR/backend/fm_receiver.py" ]; then
+    # Local installation - copy from repo
     cp -r "$SCRIPT_DIR/backend"/* "$INSTALL_DIR/backend/" 2>/dev/null || true
-fi
-if [ -d "$SCRIPT_DIR/frontend" ]; then
     cp -r "$SCRIPT_DIR/frontend"/* "$INSTALL_DIR/frontend/" 2>/dev/null || true
+else
+    # Remote installation via curl - download from GitHub
+    echo "📥 Downloading files from GitHub..."
+    curl -sSL -o "$INSTALL_DIR/backend/fm_receiver.py" \
+        https://raw.githubusercontent.com/rossingram/FM-Go/main/backend/fm_receiver.py
+    curl -sSL -o "$INSTALL_DIR/frontend/index.html" \
+        https://raw.githubusercontent.com/rossingram/FM-Go/main/frontend/index.html
+    chmod +x "$INSTALL_DIR/backend/fm_receiver.py"
 fi
 
 # Create Python virtual environment
 echo "🐍 Setting up Python environment..."
-python3 -m venv "$INSTALL_DIR/venv"
-"$INSTALL_DIR/venv/bin/pip" install --upgrade pip
+if [ -d "$INSTALL_DIR/venv" ]; then
+    echo "ℹ️  Virtual environment already exists. Updating..."
+else
+    python3 -m venv "$INSTALL_DIR/venv"
+fi
+"$INSTALL_DIR/venv/bin/pip" install --upgrade pip --quiet
 if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
-    "$INSTALL_DIR/venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
+    "$INSTALL_DIR/venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" --quiet
 else
     # Fallback: install only what we actually need
-    "$INSTALL_DIR/venv/bin/pip" install flask flask-cors
+    echo "📦 Installing Flask dependencies..."
+    "$INSTALL_DIR/venv/bin/pip" install flask flask-cors --quiet
 fi
 
 # Create default configuration
@@ -141,6 +158,12 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
+# Stop service if it exists (for reinstallation)
+if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+    echo "🛑 Stopping existing service..."
+    systemctl stop "$SERVICE_NAME" || true
+fi
+
 # Reload systemd and enable service
 systemctl daemon-reload
 systemctl enable "$SERVICE_NAME"
@@ -149,7 +172,7 @@ echo ""
 echo "✅ Installation complete!"
 echo ""
 echo "🔍 Checking for RTL-SDR hardware..."
-if rtl_test -t 2>/dev/null | grep -q "Found"; then
+if command -v rtl_test >/dev/null 2>&1 && rtl_test -t 2>/dev/null | grep -q "Found"; then
     echo "✅ RTL-SDR detected!"
 else
     echo "⚠️  RTL-SDR not detected. Please plug in your RTL-SDR dongle."

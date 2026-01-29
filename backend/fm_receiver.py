@@ -13,15 +13,22 @@ import threading
 import time
 import logging
 from pathlib import Path
-from flask import Flask, Response, jsonify, request, send_from_directory
-from flask_cors import CORS
 
-# Setup logging
+# Setup logging first
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Import Flask after logging is set up
+try:
+    from flask import Flask, Response, jsonify, request, send_from_directory
+    from flask_cors import CORS
+except ImportError as e:
+    logger.error(f"Failed to import Flask: {e}")
+    logger.error("Please install Flask: pip install flask flask-cors")
+    sys.exit(1)
 
 # Determine paths
 if os.path.exists('/opt/fm-go'):
@@ -38,8 +45,16 @@ FRONTEND_DIR = BASE_DIR / 'frontend'
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 FRONTEND_DIR.mkdir(parents=True, exist_ok=True)
 
-app = Flask(__name__, static_folder=str(FRONTEND_DIR))
-CORS(app)
+# Check if frontend directory has files
+if not list(FRONTEND_DIR.glob('*.html')):
+    logger.warning(f"Frontend directory {FRONTEND_DIR} appears empty. Web interface may not work.")
+
+try:
+    app = Flask(__name__, static_folder=str(FRONTEND_DIR))
+    CORS(app)
+except Exception as e:
+    logger.error(f"Failed to initialize Flask app: {e}")
+    raise
 
 # Global state
 current_frequency = None
@@ -304,6 +319,15 @@ def get_system_status():
 @app.route('/')
 def index():
     """Serve the web interface"""
+    index_file = FRONTEND_DIR / 'index.html'
+    if not index_file.exists():
+        return """
+        <html><body>
+        <h1>FM-Go</h1>
+        <p>Frontend files not found. Please ensure index.html is in {}</p>
+        <p>API is available at /api/status</p>
+        </body></html>
+        """.format(FRONTEND_DIR), 503
     return send_from_directory(FRONTEND_DIR, 'index.html')
 
 
