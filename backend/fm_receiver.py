@@ -154,10 +154,14 @@ def detect_rtl_sdr():
         )
         output = result.stdout + result.stderr
         
-        # If "Found" appears, device is detected (even if there are errors)
+        # Check for successful detection - device found AND tuner found
+        # Look for "Found X device(s)" and tuner identification
         if 'Found' in output and 'device' in output.lower():
-            # Device found, but may have initialization errors
-            # This is still considered "detected" - errors will show when trying to use it
+            # Check if a tuner was actually found (R820T, E4000, etc.)
+            if any(tuner in output for tuner in ['R820T', 'E4000', 'tuner', 'Supported gain']):
+                return True
+            # If device found but no tuner, still consider it detected
+            # (might be initialization issue, but device exists)
             return True
         
         # If that didn't work, try with sudo (for permission issues)
@@ -168,7 +172,11 @@ def detect_rtl_sdr():
             text=True
         )
         output = result.stdout + result.stderr
-        return 'Found' in output and 'device' in output.lower()
+        if 'Found' in output and 'device' in output.lower():
+            if any(tuner in output for tuner in ['R820T', 'E4000', 'tuner', 'Supported gain']):
+                return True
+            return True
+        return False
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError) as e:
         logger.debug(f"RTL-SDR detection error: {e}")
         return False
