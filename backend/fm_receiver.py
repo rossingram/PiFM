@@ -83,6 +83,7 @@ def load_config():
 def save_config():
     """Save configuration to file"""
     try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with open(CONFIG_FILE, 'w') as f:
             json.dump(config, f, indent=2)
     except Exception as e:
@@ -119,6 +120,7 @@ def load_presets():
 def save_presets():
     """Save presets to file"""
     try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         with open(PRESETS_FILE, 'w') as f:
             json.dump(presets, f, indent=2)
     except Exception as e:
@@ -490,20 +492,27 @@ def main():
     # Check for RTL-SDR
     if not detect_rtl_sdr():
         logger.warning("RTL-SDR not detected. Service will start but streaming may fail.")
-    
-    # Start streaming at default frequency
-    start_streaming()
+        logger.info("Plug in RTL-SDR and use the web interface to start streaming.")
+    else:
+        # Try to start streaming at default frequency (non-blocking if it fails)
+        logger.info("Attempting to start streaming at default frequency...")
+        if not start_streaming():
+            logger.warning("Failed to start streaming. Use web interface to start manually.")
     
     # Start Flask server
     port = config.get('port', 8080)
     logger.info(f"Starting FM-Go server on port {port}")
     
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        debug=False,
-        threaded=True
-    )
+    try:
+        app.run(
+            host='0.0.0.0',
+            port=port,
+            debug=False,
+            threaded=True
+        )
+    except Exception as e:
+        logger.error(f"Failed to start Flask server: {e}")
+        raise
 
 
 if __name__ == '__main__':
