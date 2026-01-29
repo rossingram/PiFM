@@ -87,7 +87,8 @@ python3 -m venv "$INSTALL_DIR/venv"
 if [ -f "$SCRIPT_DIR/requirements.txt" ]; then
     "$INSTALL_DIR/venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
 else
-    "$INSTALL_DIR/venv/bin/pip" install flask flask-cors numpy scipy pyaudio
+    # Fallback: install only what we actually need
+    "$INSTALL_DIR/venv/bin/pip" install flask flask-cors
 fi
 
 # Create default configuration
