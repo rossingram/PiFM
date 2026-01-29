@@ -208,10 +208,19 @@ echo ""
 echo "✅ Installation complete!"
 echo ""
 echo "🔍 Checking for RTL-SDR hardware..."
-if command -v rtl_test >/dev/null 2>&1 && rtl_test -t 2>/dev/null | grep -q "Found"; then
-    echo "✅ RTL-SDR detected!"
+# Test as current user first
+if command -v rtl_test >/dev/null 2>&1; then
+    if rtl_test -t 2>&1 | grep -q "Found"; then
+        echo "✅ RTL-SDR detected (as root)!"
+    elif sudo -u "$SERVICE_USER" rtl_test -t 2>&1 | grep -q "Found"; then
+        echo "✅ RTL-SDR detected (as service user)!"
+    else
+        echo "⚠️  RTL-SDR not detected by installer check."
+        echo "   This may be a permissions issue. The service will check on startup."
+        echo "   If RTL-SDR is plugged in, check the web interface status page."
+    fi
 else
-    echo "⚠️  RTL-SDR not detected. Please plug in your RTL-SDR dongle."
+    echo "⚠️  rtl_test command not found"
 fi
 
 echo ""

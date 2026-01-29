@@ -145,11 +145,27 @@ def save_presets():
 def detect_rtl_sdr():
     """Detect if RTL-SDR is available"""
     try:
+        # First check if device exists in USB
+        try:
+            usb_check = subprocess.run(
+                ['lsusb'],
+                capture_output=True,
+                timeout=2,
+                text=True
+            )
+            if '0bda:283' not in usb_check.stdout and 'RTL283' not in usb_check.stdout:
+                logger.debug("RTL-SDR not found in USB device list")
+                return False
+        except:
+            pass  # Continue even if lsusb fails
+        
+        # Now test with rtl_test
         result = subprocess.run(
             ['rtl_test', '-t'],
             capture_output=True,
             timeout=5
         )
+        
         # Decode with error handling for non-UTF-8 output
         try:
             output = result.stdout.decode('utf-8', errors='replace') + result.stderr.decode('utf-8', errors='replace')
@@ -157,20 +173,31 @@ def detect_rtl_sdr():
             # Fallback: try latin-1 or ignore errors
             output = result.stdout.decode('latin-1', errors='replace') + result.stderr.decode('latin-1', errors='replace')
         
-        # Check for successful detection - device found
+        # Check for successful detection - device found AND can communicate
         # Look for "Found X device(s)" - this indicates device is present
         if 'Found' in output and 'device' in output.lower():
-            # Check if a tuner was actually found (R820T, E4000, etc.)
-            # Even if there are errors, if we see "Found" and tuner info, device exists
-            if any(tuner in output for tuner in ['R820T', 'E4000', 'tuner', 'Supported gain']):
+            # Check if we can actually communicate with it (tuner found or gain values)
+            if any(tuner in output for tuner in ['R820T', 'E4000', 'Supported gain']):
+                logger.info("RTL-SDR detected and tuner accessible")
                 return True
-            # If device found but no tuner info, still consider it detected
-            # (device exists, initialization might have issues but we can try)
+            # If device found but communication fails, it might be disconnecting
+            if 'No supported tuner' in output or 'Failed to set' in output:
+                logger.warning("RTL-SDR device found but cannot communicate - may be disconnecting or have power issues")
+                return False
+            # If device found but no clear tuner info, still try (might work)
+            logger.info("RTL-SDR device found (tuner status unclear)")
             return True
         
+        logger.debug(f"RTL-SDR not detected. Output: {output[:150]}")
         return False
-    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError) as e:
-        logger.debug(f"RTL-SDR detection error: {e}")
+    except FileNotFoundError:
+        logger.error("rtl_test command not found. Is rtl-sdr package installed?")
+        return False
+    except subprocess.TimeoutExpired:
+        logger.warning("RTL-SDR detection timed out - device may be unresponsive")
+        return False
+    except Exception as e:
+        logger.error(f"RTL-SDR detection error: {e}")
         return False
 
 
@@ -225,7 +252,8 @@ def start_streaming(frequency=None):
         time.sleep(0.5)
     
     if not detect_rtl_sdr():
-        logger.error("RTL-SDR not detected - check if device is plugged in and drivers are not conflicting")
+        logger.error("RTL-SDR not detected - check if device is plugged in, powered, and drivers are not conflicting")
+        logger.error("Common issues: USB power problems, device disconnecting, or driver conflicts")
         return False
     
     try:
