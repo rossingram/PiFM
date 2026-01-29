@@ -63,6 +63,8 @@ audio_process = None
 is_playing = False
 config = {}
 presets = {"presets": []}
+# Intercept: first stream after SDR is used gets conservative gain to prevent overload (e.g. high-gain antenna)
+_first_stream_this_session = True
 
 
 def load_config():
@@ -72,7 +74,7 @@ def load_config():
         "port": 8080,
         "sample_rate": 240000,
         "frequency": 101500000,
-        "gain": "auto",
+        "gain": 0,  # Low gain by default to prevent overload (e.g. with high-gain antenna)
         "audio_format": "mp3",
         "audio_bitrate": 128
     }
@@ -234,8 +236,10 @@ def stop_streaming():
     logger.info("Streaming stopped")
 
 
-def start_streaming(frequency=None):
-    """Start FM streaming at the given frequency"""
+def start_streaming(frequency=None, gain_override=None):
+    """Start FM streaming at the given frequency.
+    gain_override: use this gain (number or 'auto') instead of config.
+    Lower gain (e.g. 0) prevents overload with high-gain antennas."""
     global rtl_process, audio_process, is_playing, current_frequency
     
     if frequency is None:
@@ -259,11 +263,20 @@ def start_streaming(frequency=None):
         return False
     
     try:
+        global _first_stream_this_session
         sample_rate = config.get('sample_rate', 240000)
-        gain = config.get('gain', 'auto')
+        gain = gain_override if gain_override is not None else config.get('gain', 0)
         audio_bitrate = config.get('audio_bitrate', 128)
         
+        # Intercept: first stream after SDR is plugged in / service start - force low gain to prevent overload
+        if _first_stream_this_session:
+            if gain == 'auto' or gain is None or (isinstance(gain, (int, float)) and gain > 20):
+                logger.info("First stream this session: using gain 0 to prevent SDR overload (e.g. high-gain antenna). Adjust in UI if needed.")
+                gain = 0
+            _first_stream_this_session = False
+        
         # Build rtl_fm command
+        # Use explicit gain by default to prevent overload (strong signal / high-gain antenna)
         rtl_cmd = [
             'rtl_fm',
             '-f', str(frequency),
@@ -273,10 +286,11 @@ def start_streaming(frequency=None):
             '-A', 'fast',  # Fast AGC
         ]
         
-        if gain != 'auto':
-            rtl_cmd.extend(['-g', str(gain)])
+        if gain == 'auto' or gain is None:
+            rtl_cmd.append('-T')  # Enable AGC (use only if no overload)
         else:
-            rtl_cmd.append('-T')  # Enable AGC
+            # Explicit gain in dB - lower values prevent overload
+            rtl_cmd.extend(['-g', str(gain)])
         
         # Build audio encoding pipeline
         # rtl_fm -> sox (convert to WAV) -> ffmpeg (encode to MP3)
@@ -403,16 +417,17 @@ def api_update_config():
     global config
     data = request.json
     
-    # Update config
+    # Update config (allow gain as number or 'auto')
     for key, value in data.items():
         if key in config:
             config[key] = value
     
     save_config()
     
-    # Restart stream if frequency changed
-    if 'frequency' in data:
-        start_streaming(data['frequency'])
+    # Restart stream if frequency or gain changed
+    if 'frequency' in data or 'gain' in data:
+        gain_override = data.get('gain') if 'gain' in data else None
+        start_streaming(config.get('frequency'), gain_override=gain_override)
     
     return jsonify({"success": True, "config": config})
 
@@ -491,7 +506,9 @@ def api_tune():
 @app.route('/api/play', methods=['POST'])
 def api_play():
     """Start playing"""
-    frequency = request.json.get('frequency') or config.get('frequency', 101500000)
+    data = request.json or {}
+    frequency = data.get('frequency') or config.get('frequency', 101500000)
+    gain = data.get('gain')  # None = use config; number or 'auto' to override
     
     # Check if RTL-SDR is available first
     if not detect_rtl_sdr():
@@ -500,7 +517,7 @@ def api_play():
             "error": "RTL-SDR not detected. Please ensure the device is plugged in and drivers are not conflicting."
         }), 503
     
-    if start_streaming(frequency):
+    if start_streaming(frequency, gain_override=gain):
         return jsonify({"success": True})
     else:
         return jsonify({

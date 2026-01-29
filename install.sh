@@ -151,7 +151,7 @@ cat > "$INSTALL_DIR/config/config.json" <<EOF
     "port": $PORT,
     "sample_rate": 240000,
     "frequency": 101500000,
-    "gain": "auto",
+    "gain": 0,
     "audio_format": "mp3",
     "audio_bitrate": 128
 }

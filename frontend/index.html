@@ -408,6 +408,20 @@
                 <span id="volumeValue">75%</span>
             </div>
 
+            <div class="gain-control" style="margin-top: 20px;">
+                <label for="gainSelect" style="display: block; margin-bottom: 8px; font-weight: 600;">RF Gain (dB)</label>
+                <select id="gainSelect" onchange="updateGain()" style="padding: 10px; font-size: 1em; border-radius: 8px; border: 2px solid #ddd;">
+                    <option value="0">0 (low – use with high-gain antenna)</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="40">40</option>
+                    <option value="49.6">49.6 (max)</option>
+                    <option value="auto">Auto AGC</option>
+                </select>
+                <p style="font-size: 0.85em; color: #666; margin-top: 6px;">Lower gain prevents overload if using a strong antenna.</p>
+            </div>
+
             <audio id="audioPlayer" class="audio-player" controls autoplay>
                 <source id="audioSource" src="/api/stream" type="audio/mpeg">
             </audio>
@@ -544,8 +558,32 @@
                 currentFrequency = config.frequency || 101500000;
                 frequencyInput.value = currentFrequency;
                 frequencyDisplay.textContent = formatFrequency(currentFrequency);
+                const gainSelect = document.getElementById('gainSelect');
+                if (gainSelect) {
+                    const g = config.gain;
+                    gainSelect.value = (g === 'auto' || g === undefined) ? 'auto' : String(g);
+                }
             } catch (error) {
                 console.error('Error loading config:', error);
+            }
+        }
+
+        async function updateGain() {
+            const gainSelect = document.getElementById('gainSelect');
+            const val = gainSelect.value;
+            const gain = val === 'auto' ? 'auto' : parseFloat(val);
+            try {
+                await fetch(`${API_BASE}/api/config`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({gain: gain})
+                });
+                if (isPlaying) {
+                    await stop();
+                    await play();
+                }
+            } catch (error) {
+                console.error('Error updating gain:', error);
             }
         }
 
@@ -594,10 +632,13 @@
 
         async function play() {
             try {
+                const gainSelect = document.getElementById('gainSelect');
+                const gainVal = gainSelect ? gainSelect.value : '0';
+                const gain = gainVal === 'auto' ? 'auto' : parseFloat(gainVal);
                 const response = await fetch(`${API_BASE}/api/play`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({frequency: currentFrequency})
+                    body: JSON.stringify({frequency: currentFrequency, gain: gain})
                 });
                 
                 const result = await response.json();
