@@ -422,8 +422,8 @@
                 <p style="font-size: 0.85em; color: #666; margin-top: 6px;">Lower gain prevents overload if using a strong antenna.</p>
             </div>
 
-            <audio id="audioPlayer" class="audio-player" controls autoplay>
-                <source id="audioSource" src="/api/stream" type="audio/mpeg">
+            <audio id="audioPlayer" class="audio-player" controls>
+                <source id="audioSource" src="" type="audio/mpeg">
             </audio>
         </div>
 
@@ -494,10 +494,7 @@
                 }
             });
 
-            // Update audio source when playing
-            audioPlayer.addEventListener('play', () => {
-                updateAudioSource();
-            });
+            // Don't request /api/stream until user clicks Play (avoids 503 retry flood)
 
             // Auto-refresh status
             setInterval(loadStatus, 5000);
@@ -645,7 +642,11 @@
                 if (result.success) {
                     isPlaying = true;
                     playBtn.textContent = '⏸ Pause';
-                    updateAudioSource();
+                    // Set stream URL only after backend has started (avoids 503 retries)
+                    const source = document.getElementById('audioSource');
+                    source.src = `${API_BASE}/api/stream?t=${Date.now()}`;
+                    audioPlayer.load();
+                    audioPlayer.play().catch(e => console.error('Play error:', e));
                     await loadStatus();
                 } else {
                     alert('Failed to start playback: ' + (result.error || 'Unknown error'));
