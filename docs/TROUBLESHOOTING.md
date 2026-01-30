@@ -32,6 +32,13 @@ rtl_fm -f 101500000 -s 170000 -M wfm -r 48000 -g 0 - 2>/dev/null | head -c 50000
 
 If the SDR disappears from `lsusb` during this, the problem is hardware/USB.
 
+## No audio (stream plays but no sound)
+
+- **Volume** – Check the volume slider in the UI and system/browser volume. Ensure the tab isn’t muted.
+- **Pipeline errors** – Check logs: `sudo journalctl -u fm-go.service -n 100 | grep -E "rtl_fm|sox|ffmpeg"`
+- **Frequency** – Try a known local FM frequency (e.g. 101.5 MHz = 101500000). You should hear at least static.
+- **Gain** – Try raising RF gain in the UI (e.g. 20 or Auto AGC).
+
 ## Service won’t start
 
 ```bash

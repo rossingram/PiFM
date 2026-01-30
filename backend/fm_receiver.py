@@ -194,8 +194,8 @@ def detect_rtl_sdr():
         return False
 
 
-def stop_streaming():
-    """Stop the current audio stream"""
+def stop_streaming(timeout=5):
+    """Stop the current audio stream. timeout: seconds to wait for processes to exit."""
     global rtl_process, audio_process, is_playing
     
     is_playing = False
@@ -203,32 +203,38 @@ def stop_streaming():
     if audio_process:
         try:
             audio_process.terminate()
-            audio_process.wait(timeout=5)
-        except:
+            audio_process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
             try:
                 audio_process.kill()
-            except:
+                audio_process.wait(timeout=1)
+            except Exception:
                 pass
+        except Exception:
+            pass
         audio_process = None
     
     if rtl_process:
         try:
             rtl_process.terminate()
-            rtl_process.wait(timeout=5)
-        except:
+            rtl_process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
             try:
                 rtl_process.kill()
-            except:
+                rtl_process.wait(timeout=1)
+            except Exception:
                 pass
+        except Exception:
+            pass
         rtl_process = None
     
     logger.info("Streaming stopped")
 
 
-def start_streaming(frequency=None, gain_override=None):
+def start_streaming(frequency=None, gain_override=None, is_retune=False):
     """Start FM streaming at the given frequency.
     gain_override: use this gain (number or 'auto') instead of config.
-    Lower gain (e.g. 0) prevents overload with high-gain antennas."""
+    is_retune: True when changing frequency while already playing (skip long delay, use shorter stop timeout)."""
     global rtl_process, audio_process, is_playing, current_frequency
     
     if frequency is None:
@@ -242,17 +248,17 @@ def start_streaming(frequency=None, gain_override=None):
     current_frequency = frequency
     
     if is_playing:
-        stop_streaming()
-        # Give processes time to clean up
-        time.sleep(0.5)
+        stop_streaming(timeout=2 if is_retune else 5)
+        time.sleep(0.3 if is_retune else 0.5)
     
     # Use lsusb-only check so we don't open the device with rtl_test before rtl_fm (one open = less chance of dropout)
     if not is_rtl_sdr_present():
         logger.error("RTL-SDR not present (USB). Plug in the device.")
         return False
     
-    # Brief delay before opening device - can help if SDR drops when opened immediately
-    time.sleep(1.5)
+    # Brief delay only on first start; skip when retuning to avoid request hang
+    if not is_retune:
+        time.sleep(1.5)
     
     try:
         global _first_stream_this_session
@@ -301,6 +307,8 @@ def start_streaming(frequency=None, gain_override=None):
         
         ffmpeg_cmd = [
             'ffmpeg',
+            '-fflags', '+nobuffer',  # Reduce latency so audio starts sooner
+            '-flags', 'low_delay',
             '-f', 'wav',
             '-i', '-',
             '-f', 'mp3',
@@ -319,6 +327,22 @@ def start_streaming(frequency=None, gain_override=None):
             bufsize=0
         )
         
+        def drain_stderr(proc, name, level='debug'):
+            """Drain stderr in background so the pipe doesn't fill and block the process."""
+            try:
+                for line in proc.stderr:
+                    line = line.decode('utf-8', errors='replace').strip()
+                    if line:
+                        if level == 'info':
+                            logger.info(f"[{name}] {line}")
+                        else:
+                            logger.debug(f"[{name}] {line}")
+            except Exception:
+                pass
+        
+        t_rtl = threading.Thread(target=drain_stderr, args=(rtl_process, 'rtl_fm', 'info'), daemon=True)
+        t_rtl.start()
+        
         sox_process = subprocess.Popen(
             sox_cmd,
             stdin=rtl_process.stdout,
@@ -329,6 +353,9 @@ def start_streaming(frequency=None, gain_override=None):
         
         rtl_process.stdout.close()
         
+        t_sox = threading.Thread(target=drain_stderr, args=(sox_process, 'sox'), daemon=True)
+        t_sox.start()
+        
         audio_process = subprocess.Popen(
             ffmpeg_cmd,
             stdin=sox_process.stdout,
@@ -338,6 +365,9 @@ def start_streaming(frequency=None, gain_override=None):
         )
         
         sox_process.stdout.close()
+        
+        t_ffmpeg = threading.Thread(target=drain_stderr, args=(audio_process, 'ffmpeg'), daemon=True)
+        t_ffmpeg.start()
         
         global _stream_died_logged
         _stream_died_logged = False
@@ -483,19 +513,27 @@ def api_delete_preset(preset_id):
 @app.route('/api/tune', methods=['POST'])
 def api_tune():
     """Tune to a frequency"""
-    data = request.json
-    
-    if 'frequency' not in data:
-        return jsonify({"success": False, "error": "Missing frequency"}), 400
-    
-    frequency = int(data['frequency'])
-    
-    if start_streaming(frequency):
-        config['frequency'] = frequency
-        save_config()
-        return jsonify({"success": True, "frequency": frequency})
-    else:
-        return jsonify({"success": False, "error": "Failed to start stream"}), 500
+    try:
+        data = request.json or {}
+        if 'frequency' not in data:
+            return jsonify({"success": False, "error": "Missing frequency"}), 400
+        
+        frequency = int(data['frequency'])
+        if frequency < 87500000 or frequency > 108000000:
+            return jsonify({"success": False, "error": "Frequency must be 87.5–108 MHz"}), 400
+        
+        if start_streaming(frequency, is_retune=is_playing):
+            config['frequency'] = frequency
+            save_config()
+            return jsonify({"success": True, "frequency": frequency})
+        else:
+            return jsonify({"success": False, "error": "Failed to start stream"}), 500
+    except (ValueError, TypeError) as e:
+        logger.error(f"Tune error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        logger.exception("Tune failed")
+        return jsonify({"success": False, "error": "Internal error"}), 500
 
 
 @app.route('/api/play', methods=['POST'])

@@ -693,7 +693,14 @@
                     body: JSON.stringify({frequency: frequency})
                 });
                 
-                const result = await response.json();
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    alert('Tune failed: server error. Check logs with: sudo journalctl -u fm-go.service -n 30');
+                    return;
+                }
                 if (result.success) {
                     currentFrequency = frequency;
                     frequencyDisplay.textContent = formatFrequency(frequency);
@@ -707,7 +714,7 @@
                 }
             } catch (error) {
                 console.error('Error tuning:', error);
-                alert('Failed to tune');
+                alert('Failed to tune: ' + error.message);
             }
         }
 
