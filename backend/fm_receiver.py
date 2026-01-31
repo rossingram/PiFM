@@ -277,20 +277,23 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
             _first_stream_this_session = False
         
         # Build rtl_fm command (FM 87.5-108 MHz or AM 530-1700 kHz)
-        audio_rate = '48000'
         if is_am:
-            # AM broadcast: direct sampling for < 24 MHz, 48k sample/audio rate
+            # AM broadcast: direct sampling. Use valid RTL-SDR device rate (24k default);
+            # -s 48000 is not a supported hardware rate and can produce no audio.
+            audio_rate = '24000'
             rtl_cmd = [
                 'rtl_fm',
                 '-f', str(frequency),
-                '-s', '48000',
+                '-s', '24000',   # Device sample rate (must be supported; 24k is default/valid)
                 '-M', 'am',
                 '-r', audio_rate,
                 '-E', 'direct',  # Tune AM band (530-1700 kHz)
+                '-E', 'edge',    # Lower edge tuning for direct sampling
                 '-A', 'fast',
             ]
             logger.info(f"Starting AM stream at {frequency} Hz ({frequency/1000:.0f} kHz)")
         else:
+            audio_rate = '48000'
             # FM broadcast
             rtl_cmd = [
                 'rtl_fm',
