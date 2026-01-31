@@ -164,7 +164,7 @@ cat > "$INSTALL_DIR/config/presets.json" <<EOF
         {"id": 1, "name": "570 AM", "frequency": 570000},
         {"id": 2, "name": "710 AM", "frequency": 710000},
         {"id": 3, "name": "1150 AM", "frequency": 1150000},
-        {"id": 4, "name": "830 AM", "frequency": 830000},
+        {"id": 4, "name": "98.7 FM HD2", "frequency": 98700000},
         {"id": 5, "name": "102.7 FM", "frequency": 102700000},
         {"id": 6, "name": "106.7 FM", "frequency": 106700000}
     ]
