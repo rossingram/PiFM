@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FM-Go Backend Service
+PiFM Backend Service
 FM radio receiver using RTL-SDR with HTTP streaming
 """
 
@@ -31,8 +31,8 @@ except ImportError as e:
     sys.exit(1)
 
 # Determine paths
-if os.path.exists('/opt/fm-go'):
-    BASE_DIR = Path('/opt/fm-go')
+if os.path.exists('/opt/pifm'):
+    BASE_DIR = Path('/opt/pifm')
 else:
     BASE_DIR = Path(__file__).parent.parent
 
@@ -456,7 +456,7 @@ def index():
     if not index_file.exists():
         return """
         <html><body>
-        <h1>FM-Go</h1>
+        <h1>PiFM</h1>
         <p>Frontend files not found. Please ensure index.html is in {}</p>
         <p>API is available at /api/status</p>
         </body></html>
@@ -684,7 +684,7 @@ def main():
     
     # Start Flask server
     port = config.get('port', 8080)
-    logger.info(f"Starting FM-Go server on port {port}")
+    logger.info(f"Starting PiFM server on port {port}")
     
     try:
         app.run(

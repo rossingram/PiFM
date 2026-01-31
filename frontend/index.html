@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FM-Go Radio</title>
+    <title>PiFM Radio</title>
     <style>
         * {
             margin: 0;
@@ -359,7 +359,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎧 FM-Go</h1>
+            <h1>🎧 PiFM</h1>
             <p>Raspberry Pi FM Radio Receiver</p>
         </header>
 
@@ -700,7 +700,7 @@
                 try {
                     result = JSON.parse(text);
                 } catch (e) {
-                    alert('Tune failed: server error. Check logs with: sudo journalctl -u fm-go.service -n 30');
+                    alert('Tune failed: server error. Check logs with: sudo journalctl -u pifm.service -n 30');
                     return;
                 }
                 if (result.success) {

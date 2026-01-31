@@ -16,7 +16,7 @@ History will still contain the old "adding files" / "adding more files" commits,
 
 ## Option B: Squash into two clean commits (rewrite history)
 
-Result: **init** → **FM-Go: Raspberry Pi FM radio receiver** (one commit with the full project).
+Result: **init** → **PiFM: Raspberry Pi FM radio receiver** (one commit with the full project).
 
 1. Run the cleanup script from repo root:
 

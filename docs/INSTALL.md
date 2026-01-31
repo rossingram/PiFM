@@ -1,16 +1,16 @@
-# FM-Go Installation
+# PiFM Installation
 
 ## One-command install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rossingram/FM-Go/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/rossingram/PiFM/main/install.sh | sudo bash
 ```
 
 ## Manual install (from repo)
 
 ```bash
-git clone https://github.com/rossingram/FM-Go.git
-cd FM-Go
+git clone https://github.com/rossingram/PiFM.git
+cd PiFM
 sudo ./install.sh
 ```
 
@@ -18,11 +18,11 @@ sudo ./install.sh
 
 - Installs system packages: `rtl-sdr`, `sox`, `ffmpeg`, `python3`, etc.
 - Blacklists DVB-T drivers that conflict with RTL-SDR
-- Creates user `fmgo` and adds it to `plugdev` / `dialout`
+- Creates user `pifm` and adds it to `plugdev` / `dialout`
 - Adds udev rules for RTL-SDR
-- Installs Python deps (Flask, flask-cors) in a venv under `/opt/fm-go`
-- Copies backend and frontend to `/opt/fm-go`
-- Creates and enables `fm-go.service` (systemd)
+- Installs Python deps (Flask, flask-cors) in a venv under `/opt/pifm`
+- Copies backend and frontend to `/opt/pifm`
+- Creates and enables `pifm.service` (systemd)
 
 ## After install
 
@@ -33,7 +33,7 @@ sudo ./install.sh
 ## Updating
 
 ```bash
-cd ~/FM-Go
+cd ~/PiFM
 git pull
 sudo ./install.sh
 ```

@@ -1,11 +1,11 @@
-# FM-Go Troubleshooting
+# PiFM Troubleshooting
 
 ## RTL-SDR not detected
 
 - **Plug in the SDR** and wait a few seconds. The web UI shows "RTL-SDR ✅ Detected" when the device is present (USB only; we don’t open the device for status).
 - **Reinstall** so udev rules and user groups are applied:
   ```bash
-  cd ~/FM-Go && sudo ./install.sh
+  cd ~/PiFM && sudo ./install.sh
   ```
 - **Unload conflicting drivers** (if you use TV tuner software):
   ```bash
@@ -18,7 +18,7 @@
 This usually means the device is still held by a previous process or the kernel. The service now **retries once** after a short delay. If it still fails:
 
 - **Wait 5–10 seconds** after stopping the stream, then try Play again.
-- **Restart the service** to release the device: `sudo systemctl restart fm-go.service`
+- **Restart the service** to release the device: `sudo systemctl restart pifm.service`
 - **Unplug and replug** the RTL-SDR, then try again.
 - Ensure no other program is using the SDR (e.g. GQRX, SDR#, or another `rtl_fm`/`rtl_test` process).
 
@@ -33,7 +33,7 @@ Try in order:
 3. **Different USB port** – Prefer USB 2.0 if available; try each port.
 4. **Official Pi power supply** – Undervoltage causes USB dropouts. Use 5V 2.5A+ (Pi 3B+) or 5V 3A+ (Pi 4/5).
 
-**Quick test without FM-Go** (on the Pi, SDR plugged in):
+**Quick test without PiFM** (on the Pi, SDR plugged in):
 
 ```bash
 rtl_fm -f 101500000 -s 170000 -M wfm -r 48000 -g 0 - 2>/dev/null | head -c 5000000 > /dev/null
@@ -44,38 +44,38 @@ If the SDR disappears from `lsusb` during this, the problem is hardware/USB.
 ## No audio (stream plays but no sound)
 
 - **Volume** – Check the volume slider in the UI and system/browser volume. Ensure the tab isn’t muted.
-- **Pipeline errors** – Check logs: `sudo journalctl -u fm-go.service -n 100 | grep -E "rtl_fm|sox|ffmpeg"`
+- **Pipeline errors** – Check logs: `sudo journalctl -u pifm.service -n 100 | grep -E "rtl_fm|sox|ffmpeg"`
 - **Frequency** – Try a known local FM frequency (e.g. 101.5 MHz = 101500000). You should hear at least static.
 - **Gain** – Try raising RF gain in the UI (e.g. 20 or Auto AGC).
 
 ## Service won’t start
 
 ```bash
-sudo systemctl status fm-go.service
-sudo journalctl -u fm-go.service -n 50
+sudo systemctl status pifm.service
+sudo journalctl -u pifm.service -n 50
 ```
 
 Ensure Python dependencies are installed:
 
 ```bash
-sudo /opt/fm-go/venv/bin/pip install flask flask-cors
+sudo /opt/pifm/venv/bin/pip install flask flask-cors
 ```
 
 ## Web interface not loading
 
-- Confirm the service is running: `sudo systemctl status fm-go.service`
+- Confirm the service is running: `sudo systemctl status pifm.service`
 - Open `http://<pi-ip>:8080` (replace with your Pi’s IP).
 - Check firewall: port 8080 must be allowed.
 
 ## Reinstall from scratch
 
 ```bash
-cd ~/FM-Go
+cd ~/PiFM
 sudo ./install.sh
 ```
 
 Or one-command:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rossingram/FM-Go/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/rossingram/PiFM/main/install.sh | sudo bash
 ```

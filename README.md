@@ -1,24 +1,24 @@
-# FM-Go 🎧
+# PiFM 🎧
 
 A plug-and-play Raspberry Pi FM radio receiver. Turn a Pi into a headless, always-on network radio with a simple web interface.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![FM-Go web interface](docs/screenshot.png)
+![PiFM web interface](docs/screenshot.png)
 
 ## Quick Start
 
 **One-command install:**
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rossingram/FM-Go/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/rossingram/PiFM/main/install.sh | sudo bash
 ```
 
 **Or from repo:**
 
 ```bash
-git clone https://github.com/rossingram/FM-Go.git
-cd FM-Go
+git clone https://github.com/rossingram/PiFM.git
+cd PiFM
 sudo ./install.sh
 ```
 

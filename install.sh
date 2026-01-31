@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-# FM-Go Installer
+# PiFM Installer
 # One-command installation for Raspberry Pi FM radio receiver
 
-echo "🎧 FM-Go Installer"
-echo "=================="
+echo "🎧 PiFM Installer"
+echo "================="
 echo ""
 
 # Check if running on Raspberry Pi
@@ -24,9 +24,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-INSTALL_DIR="/opt/fm-go"
-SERVICE_USER="fmgo"
-SERVICE_NAME="fm-go.service"
+INSTALL_DIR="/opt/pifm"
+SERVICE_USER="pifm"
+SERVICE_NAME="pifm.service"
 PORT=8080
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -102,7 +102,7 @@ else
     # Remote installation via curl - download from GitHub
     echo "📥 Downloading files from GitHub..."
     if curl -sSL -f -o "$INSTALL_DIR/backend/fm_receiver.py" \
-        https://raw.githubusercontent.com/rossingram/FM-Go/main/backend/fm_receiver.py; then
+        https://raw.githubusercontent.com/rossingram/PiFM/main/backend/fm_receiver.py; then
         echo "✅ Downloaded backend/fm_receiver.py"
         chmod +x "$INSTALL_DIR/backend/fm_receiver.py"
     else
@@ -111,7 +111,7 @@ else
     fi
     
     if curl -sSL -f -o "$INSTALL_DIR/frontend/index.html" \
-        https://raw.githubusercontent.com/rossingram/FM-Go/main/frontend/index.html; then
+        https://raw.githubusercontent.com/rossingram/PiFM/main/frontend/index.html; then
         echo "✅ Downloaded frontend/index.html"
     else
         echo "❌ Failed to download frontend file"
@@ -178,7 +178,7 @@ chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
 echo "🔧 Creating systemd service..."
 cat > "/etc/systemd/system/$SERVICE_NAME" <<EOF
 [Unit]
-Description=FM-Go Radio Receiver
+Description=PiFM Radio Receiver
 After=network.target sound.target
 
 [Service]
@@ -225,7 +225,7 @@ else
 fi
 
 echo ""
-echo "🚀 Starting FM-Go service..."
+echo "🚀 Starting PiFM service..."
 systemctl start "$SERVICE_NAME"
 
 sleep 2

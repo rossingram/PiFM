@@ -1,6 +1,6 @@
-# Contributing to FM-Go
+# Contributing to PiFM
 
-Thank you for your interest in contributing to FM-Go!
+Thank you for your interest in contributing to PiFM!
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for project layout and GitHub workflow.
 

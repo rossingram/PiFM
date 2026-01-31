@@ -23,7 +23,7 @@ git reset --soft 41239ca
 git add -A
 
 # One clean commit describing the project
-git commit -m "FM-Go: Raspberry Pi FM radio receiver
+git commit -m "PiFM: Raspberry Pi FM radio receiver
 
 - Backend: Flask API, rtl_fm/sox/ffmpeg pipeline, lsusb-only status
 - Frontend: web UI (player, presets, gain control, status)
