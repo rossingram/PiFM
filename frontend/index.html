@@ -709,9 +709,29 @@
                     frequencyInput.value = frequency;
                     await loadPresets();
                     if (isPlaying) {
-                        // Brief delay so backend stream is ready, then refresh stream URL so browser requests it
-                        await new Promise(r => setTimeout(r, 500));
-                        updateAudioSource();
+                        // Wait for backend stream to be ready, then refresh stream URL so browser requests it
+                        // Poll status a couple times to ensure backend has started streaming
+                        let attempts = 0;
+                        const checkReady = async () => {
+                            try {
+                                const response = await fetch(`${API_BASE}/api/status`);
+                                const status = await response.json();
+                                if (status.is_playing && status.current_frequency === frequency) {
+                                    updateAudioSource();
+                                } else if (attempts < 5) {
+                                    attempts++;
+                                    setTimeout(checkReady, 200);
+                                } else {
+                                    // Fallback: update anyway after max attempts
+                                    updateAudioSource();
+                                }
+                            } catch (e) {
+                                console.error('Error checking status:', e);
+                                // Fallback: update anyway
+                                updateAudioSource();
+                            }
+                        };
+                        setTimeout(checkReady, 300);
                     }
                 } else {
                     alert('Failed to tune: ' + (result.error || 'Unknown error'));
@@ -823,12 +843,28 @@
 
         function updateAudioSource() {
             const source = document.getElementById('audioSource');
-            // Clear then set URL so the browser always issues a new stream request (avoids stale/cached)
-            source.src = '';
+            // Force a new stream request: pause, clear src, wait for browser to process, then set new URL
+            audioPlayer.pause();
+            audioPlayer.removeAttribute('src');
+            source.removeAttribute('src');
             audioPlayer.load();
-            source.src = `${API_BASE}/api/stream?t=${Date.now()}`;
-            audioPlayer.load();
-            audioPlayer.play().catch(e => console.error('Play error:', e));
+            
+            // Wait for browser to process the clear, then set new URL with timestamp to force new request
+            setTimeout(() => {
+                const newUrl = `${API_BASE}/api/stream?t=${Date.now()}`;
+                console.log('Updating stream URL:', newUrl);
+                source.src = newUrl;
+                audioPlayer.load();
+                // Play immediately - browser will request the stream when load() is called
+                audioPlayer.play().catch(e => {
+                    console.error('Play error:', e);
+                    // If play fails, try again after canplay event
+                    audioPlayer.addEventListener('canplay', function playOnReady() {
+                        audioPlayer.removeEventListener('canplay', playOnReady);
+                        audioPlayer.play().catch(e => console.error('Play error (retry):', e));
+                    }, { once: true });
+                });
+            }, 100);
         }
 
         // Initialize on load
