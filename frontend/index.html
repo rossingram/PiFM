@@ -12,42 +12,43 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
             min-height: 100vh;
             padding: 20px;
-            color: #333;
+            color: #e0e0e0;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            background: #252525;
+            border-radius: 12px;
             overflow: hidden;
         }
 
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 24px;
             text-align: center;
+            border-bottom: 1px solid #333;
         }
 
         header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 1.75em;
+            margin-bottom: 4px;
+            font-weight: 600;
         }
 
         header p {
-            opacity: 0.9;
-            font-size: 1.1em;
+            font-size: 0.9em;
+            color: #888;
         }
 
         .section {
-            padding: 30px;
-            border-bottom: 1px solid #eee;
+            padding: 24px;
+            border-bottom: 1px solid #333;
         }
 
         .section:last-child {
@@ -55,52 +56,50 @@
         }
 
         .section-title {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #667eea;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 1em;
+            margin-bottom: 16px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        /* Player Section */
         .player {
             text-align: center;
         }
 
         .frequency-display {
-            font-size: 3em;
-            font-weight: bold;
-            color: #667eea;
-            margin: 20px 0;
+            font-size: 2.5em;
+            font-weight: 600;
+            color: #fff;
+            margin: 16px 0;
             font-variant-numeric: tabular-nums;
         }
 
         .station-name {
-            font-size: 1.2em;
-            color: #666;
-            margin-bottom: 20px;
-            padding: 10px;
-            border: 2px dashed #ddd;
-            border-radius: 8px;
+            font-size: 1em;
+            color: #888;
+            margin-bottom: 16px;
+            padding: 8px 12px;
+            border: 1px solid #404040;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: border-color 0.2s;
         }
 
         .station-name:hover {
-            border-color: #667eea;
-            background: #f8f9ff;
+            border-color: #555;
         }
 
         .station-name.editing {
-            border: 2px solid #667eea;
-            background: white;
+            border-color: #666;
         }
 
         .station-name input {
             width: 100%;
             border: none;
+            background: transparent;
             font-size: 1em;
+            color: #e0e0e0;
             text-align: center;
             outline: none;
         }
@@ -109,51 +108,46 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
-            margin: 30px 0;
+            gap: 12px;
+            margin: 20px 0;
             flex-wrap: wrap;
         }
 
         .btn {
-            padding: 15px 30px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 50px;
-            font-size: 1em;
+            border-radius: 8px;
+            font-size: 0.95em;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            transition: opacity 0.2s;
+            font-weight: 500;
         }
 
         .btn-primary {
-            background: #667eea;
-            color: white;
+            background: #404040;
+            color: #fff;
         }
 
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .btn-primary:hover:not(:disabled) {
+            background: #505050;
         }
 
         .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
+            background: #333;
+            color: #e0e0e0;
         }
 
-        .btn-secondary:hover {
-            background: #e0e0e0;
+        .btn-secondary:hover:not(:disabled) {
+            background: #404040;
         }
 
         .btn-danger {
-            background: #e74c3c;
-            color: white;
+            background: #4a2525;
+            color: #e88;
         }
 
-        .btn-danger:hover {
-            background: #c0392b;
+        .btn-danger:hover:not(:disabled) {
+            background: #5a3030;
         }
 
         .btn:disabled {
@@ -164,34 +158,33 @@
         .volume-control {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin: 20px 0;
+            gap: 12px;
+            margin: 16px 0;
         }
 
         .volume-control input[type="range"] {
             flex: 1;
-            height: 8px;
-            border-radius: 5px;
-            background: #ddd;
+            height: 6px;
+            border-radius: 3px;
+            background: #404040;
             outline: none;
             -webkit-appearance: none;
         }
 
         .volume-control input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            background: #667eea;
+            background: #888;
             cursor: pointer;
         }
 
         .volume-control input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            background: #667eea;
+            background: #888;
             cursor: pointer;
             border: none;
         }
@@ -199,148 +192,144 @@
         .tune-control {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin: 20px 0;
+            gap: 12px;
+            margin: 16px 0;
             flex-wrap: wrap;
         }
 
         .tune-control input[type="number"] {
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1.1em;
-            width: 200px;
+            padding: 10px 12px;
+            border: 1px solid #404040;
+            border-radius: 6px;
+            font-size: 1em;
+            width: 160px;
             text-align: center;
+            background: #1a1a1a;
+            color: #e0e0e0;
         }
 
         .tune-control input[type="number"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #555;
         }
 
-        /* Presets Section */
+        .tune-control label, .volume-control span, #volumeValue {
+            color: #888;
+            font-size: 0.9em;
+        }
+
         .presets-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
         }
 
         .preset-card {
-            background: #f8f9ff;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 14px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: border-color 0.2s;
         }
 
         .preset-card:hover {
-            border-color: #667eea;
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            border-color: #555;
         }
 
         .preset-card.active {
-            border-color: #667eea;
-            background: #667eea;
-            color: white;
+            border-color: #666;
+            background: #2a2a2a;
         }
 
         .preset-name {
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #e0e0e0;
         }
 
         .preset-frequency {
-            font-size: 0.9em;
-            opacity: 0.8;
+            font-size: 0.85em;
+            color: #888;
         }
 
         .preset-actions {
-            margin-top: 10px;
+            margin-top: 8px;
             display: flex;
-            gap: 5px;
+            gap: 4px;
             justify-content: center;
         }
 
         .preset-actions button {
-            padding: 5px 10px;
+            padding: 4px 8px;
             font-size: 0.8em;
         }
 
         .add-preset-form {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f8f9ff;
-            border-radius: 12px;
+            margin-top: 16px;
+            padding: 16px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333;
         }
 
         .add-preset-form input {
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1em;
-            margin: 5px;
-            width: calc(50% - 10px);
+            padding: 10px 12px;
+            border: 1px solid #404040;
+            border-radius: 6px;
+            font-size: 0.95em;
+            margin: 4px;
+            width: calc(50% - 8px);
+            background: #252525;
+            color: #e0e0e0;
         }
 
-        /* Status Section */
         .status-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
         }
 
         .status-card {
-            background: #f8f9ff;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 14px;
             text-align: center;
         }
 
         .status-label {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 8px;
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 6px;
         }
 
         .status-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #667eea;
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #e0e0e0;
         }
 
         .status-value.success {
-            color: #27ae60;
+            color: #6a9;
         }
 
         .status-value.error {
-            color: #e74c3c;
+            color: #e88;
         }
 
         .audio-player {
             display: none;
         }
 
-        /* Loading spinner */
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        select {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #404040;
+            border-radius: 6px;
         }
 
         @media (max-width: 600px) {
@@ -384,7 +373,7 @@
             <div class="frequency-display" id="frequencyDisplay">--</div>
             
             <div class="station-name" id="stationName">
-                <span id="stationNameText">Loading...</span>
+                <span id="stationNameText">—</span>
             </div>
 
             <div class="controls">
@@ -398,9 +387,8 @@
 
             <div class="tune-control">
                 <label>Frequency (Hz):</label>
-                <input type="number" id="frequencyInput" min="530000" max="108000000" step="1000" value="101500000" placeholder="AM 530k–1.7M, FM 87.5M–108M">
+                <input type="number" id="frequencyInput" min="530000" max="108000000" step="1000" value="101500000" placeholder="e.g. 101500000">
                 <button class="btn btn-primary" id="tuneBtn" onclick="tune()">Tune</button>
-                <p style="font-size: 0.85em; color: #666; margin-top: 6px;">AM: 530000–1700000 (kHz). FM: 87500000–108000000 (MHz).</p>
             </div>
 
             <div class="volume-control">
@@ -409,18 +397,17 @@
                 <span id="volumeValue">75%</span>
             </div>
 
-            <div class="gain-control" style="margin-top: 20px;">
-                <label for="gainSelect" style="display: block; margin-bottom: 8px; font-weight: 600;">RF Gain (dB)</label>
-                <select id="gainSelect" onchange="updateGain()" style="padding: 10px; font-size: 1em; border-radius: 8px; border: 2px solid #ddd;">
-                    <option value="0">0 (low – use with high-gain antenna)</option>
+            <div class="gain-control" style="margin-top: 16px;">
+                <label for="gainSelect" style="display: block; margin-bottom: 6px; font-size: 0.9em; color: #888;">RF Gain</label>
+                <select id="gainSelect" onchange="updateGain()" style="padding: 8px 12px; font-size: 0.95em; border-radius: 6px; border: 1px solid #404040;">
+                    <option value="auto" selected>Auto AGC</option>
+                    <option value="0">0</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
                     <option value="30">30</option>
                     <option value="40">40</option>
                     <option value="49.6">49.6 (max)</option>
-                    <option value="auto">Auto AGC</option>
                 </select>
-                <p style="font-size: 0.85em; color: #666; margin-top: 6px;">Lower gain prevents overload if using a strong antenna.</p>
             </div>
 
             <audio id="audioPlayer" class="audio-player" controls>
@@ -559,7 +546,7 @@
                 const gainSelect = document.getElementById('gainSelect');
                 if (gainSelect) {
                     const g = config.gain;
-                    gainSelect.value = (g === 'auto' || g === undefined) ? 'auto' : String(g);
+                    gainSelect.value = (g === 'auto' || g === undefined || g === 0) ? 'auto' : String(g);
                 }
             } catch (error) {
                 console.error('Error loading config:', error);
