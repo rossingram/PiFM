@@ -330,9 +330,9 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
             '-r', pipeline_rate,  # 48k WAV so MP3 is 48k (AM: sox resamples 24k->48k)
             '-'   # stdout
         ]
-        # AM from direct sampling is often very quiet; boost so it's audible (effect after output)
+        # AM from direct sampling is often very quiet; boost and normalize so it's audible (effect after output)
         if is_am:
-            sox_cmd.extend(['gain', '15'])  # +15 dB
+            sox_cmd.extend(['gain', '20', 'norm', '-3'])  # +20 dB then normalize to -3 dB headroom
         
         ffmpeg_cmd = [
             'ffmpeg',
