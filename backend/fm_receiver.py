@@ -337,6 +337,7 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
         
         # MP3 with iOS Safari-optimized settings: 44.1kHz, CBR, 64k bitrate
         # Using conservative settings to avoid garbled audio on iOS Safari
+        # Key: -reservoir 0 disables bit reservoir (ensures consistent frame sizes for streaming)
         ffmpeg_cmd = [
             'ffmpeg',
             '-f', 'wav',
@@ -347,6 +348,7 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
             '-ar', pipeline_rate,  # 44.1kHz (standard MP3 rate)
             '-ac', '1',  # Mono
             '-write_xing', '0',  # Disable XING header
+            '-reservoir', '0',  # Disable bit reservoir (critical for iOS Safari - ensures consistent frame sizes)
             '-'  # stdout
         ]
         
@@ -629,6 +631,32 @@ def api_stream():
     def generate():
         global _stream_died_logged
         try:
+            # iOS Safari: Buffer initial 64KB to ensure MP3 stream is properly initialized
+            # This helps iOS Safari decode the stream correctly
+            initial_buffer = b''
+            buffer_target = 65536  # 64KB initial buffer
+            
+            # Build initial buffer
+            while len(initial_buffer) < buffer_target and is_playing and audio_process:
+                if audio_process.poll() is not None:
+                    break
+                chunk = audio_process.stdout.read(32768)
+                if not chunk:
+                    if audio_process.poll() is not None:
+                        break
+                    time.sleep(0.05)
+                    continue
+                initial_buffer += chunk
+            
+            # Send initial buffer if we have enough data
+            if len(initial_buffer) >= 16384:  # At least 16KB before starting
+                yield initial_buffer
+            else:
+                # If we don't have enough, something is wrong
+                logger.warning("Insufficient initial buffer for stream")
+                return
+            
+            # Continue streaming normally
             while is_playing and audio_process:
                 if audio_process.poll() is not None:
                     if not _stream_died_logged:
@@ -637,8 +665,8 @@ def api_stream():
                     stop_streaming()
                     break
                 
-                # iOS Safari: Use 32KB chunks (balance between latency and smooth playback)
-                chunk = audio_process.stdout.read(32768)
+                # Use 16KB chunks for smoother iOS Safari playback
+                chunk = audio_process.stdout.read(16384)
                 if not chunk:
                     if audio_process.poll() is not None:
                         if not _stream_died_logged:
@@ -646,7 +674,7 @@ def api_stream():
                             logger.error("Audio process terminated unexpectedly (SDR may have disconnected)")
                         stop_streaming()
                         break
-                    time.sleep(0.1)
+                    time.sleep(0.05)
                     continue
                 yield chunk
         except GeneratorExit:
@@ -663,8 +691,9 @@ def api_stream():
             'Expires': '0',
             'X-Content-Type-Options': 'nosniff',
             'Connection': 'keep-alive',
-            'Accept-Ranges': 'bytes',  # Helpful for iOS Safari streaming
-            'Content-Type': 'audio/mpeg'  # MP3
+            'Accept-Ranges': 'bytes',
+            'Content-Type': 'audio/mpeg',
+            'Transfer-Encoding': 'chunked'  # Explicit chunked encoding for live stream
         }
     )
 
