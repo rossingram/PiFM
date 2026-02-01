@@ -341,8 +341,11 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
             '-f', 'wav',
             '-i', '-',
             '-f', 'mp3',
-            '-b:a', f'{audio_bitrate}k',
             '-acodec', 'libmp3lame',
+            '-b:a', f'{audio_bitrate}k',  # Constant bitrate (CBR) for mobile compatibility
+            '-ar', pipeline_rate,  # Sample rate (48k - standard for mobile/web)
+            '-ac', '1',  # Mono (we're already mono from sox)
+            '-write_xing', '0',  # Disable XING header (can cause mobile playback issues)
             '-'  # stdout
         ]
         
