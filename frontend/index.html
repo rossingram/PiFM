@@ -473,6 +473,15 @@
 
             // Don't request /api/stream until user clicks Play (avoids 503 retry flood)
 
+            // Add event listeners for debugging
+            audioPlayer.addEventListener('loadstart', () => console.log('Audio: loadstart'));
+            audioPlayer.addEventListener('loadeddata', () => console.log('Audio: loadeddata'));
+            audioPlayer.addEventListener('canplay', () => console.log('Audio: canplay'));
+            audioPlayer.addEventListener('playing', () => console.log('Audio: playing'));
+            audioPlayer.addEventListener('error', (e) => console.error('Audio error:', e, audioPlayer.error));
+            audioPlayer.addEventListener('stalled', () => console.warn('Audio: stalled'));
+            audioPlayer.addEventListener('waiting', () => console.warn('Audio: waiting'));
+
             // Auto-refresh status
             setInterval(loadStatus, 5000);
         }
@@ -708,6 +717,9 @@
                     frequencyDisplay.textContent = formatFrequency(frequency);
                     frequencyInput.value = frequency;
                     await loadPresets();
+                    
+                    // If already playing, update the stream URL
+                    // If not playing, start playback automatically after tuning
                     if (isPlaying) {
                         // Wait for backend stream to be ready, then refresh stream URL so browser requests it
                         // Poll status a couple times to ensure backend has started streaming
@@ -716,13 +728,16 @@
                             try {
                                 const response = await fetch(`${API_BASE}/api/status`);
                                 const status = await response.json();
+                                console.log('Status check:', status.is_playing, status.current_frequency, frequency);
                                 if (status.is_playing && status.current_frequency === frequency) {
+                                    console.log('Backend ready, updating audio source');
                                     updateAudioSource();
                                 } else if (attempts < 5) {
                                     attempts++;
                                     setTimeout(checkReady, 200);
                                 } else {
                                     // Fallback: update anyway after max attempts
+                                    console.log('Max attempts reached, updating audio source anyway');
                                     updateAudioSource();
                                 }
                             } catch (e) {
@@ -732,6 +747,10 @@
                             }
                         };
                         setTimeout(checkReady, 300);
+                    } else {
+                        // Not playing - start playback automatically after tuning
+                        console.log('Not playing, starting playback after tune');
+                        await play();
                     }
                 } else {
                     alert('Failed to tune: ' + (result.error || 'Unknown error'));
@@ -842,6 +861,7 @@
         }
 
         function updateAudioSource() {
+            console.log('updateAudioSource called, isPlaying:', isPlaying);
             const source = document.getElementById('audioSource');
             // Force a new stream request: pause, clear src, wait for browser to process, then set new URL
             audioPlayer.pause();
@@ -860,6 +880,7 @@
                     console.error('Play error:', e);
                     // If play fails, try again after canplay event
                     audioPlayer.addEventListener('canplay', function playOnReady() {
+                        console.log('canplay event fired, attempting to play');
                         audioPlayer.removeEventListener('canplay', playOnReady);
                         audioPlayer.play().catch(e => console.error('Play error (retry):', e));
                     }, { once: true });

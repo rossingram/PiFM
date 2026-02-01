@@ -625,12 +625,17 @@ _stream_died_logged = False
 def api_stream():
     """Audio stream endpoint"""
     global _stream_died_logged
+    logger.info("Stream endpoint requested")
     if not is_playing or not audio_process:
+        logger.warning("Stream requested but not active (is_playing=%s, audio_process=%s)", is_playing, audio_process is not None)
         return Response("Stream not active", status=503, mimetype='text/plain')
     
+    logger.info("Starting stream generation")
     def generate():
         global _stream_died_logged
+        bytes_sent = 0
         try:
+            logger.info("Stream generator started, entering loop")
             while is_playing and audio_process:
                 if audio_process.poll() is not None:
                     if not _stream_died_logged:
@@ -650,6 +655,9 @@ def api_stream():
                         break
                     time.sleep(0.1)
                     continue
+                bytes_sent += len(chunk)
+                if bytes_sent <= 65536:  # Log first 64KB
+                    logger.debug(f"Sending chunk: {len(chunk)} bytes (total: {bytes_sent})")
                 yield chunk
         except GeneratorExit:
             pass
