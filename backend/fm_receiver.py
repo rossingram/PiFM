@@ -314,8 +314,9 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
         else:
             rtl_cmd.extend(['-g', str(gain)])
         
-        # Pipeline output is always 48k (browser/MP3); AM uses 24k from rtl_fm, so sox resamples
-        pipeline_rate = '48000'
+        # Use 44.1kHz for MP3 (standard CD rate, better iOS Safari compatibility than 48k)
+        # AM uses 24k from rtl_fm, so sox resamples 24k->44.1k
+        pipeline_rate = '44100'
         # Build audio encoding pipeline: rtl_fm -> sox (raw to WAV, optionally resample) -> ffmpeg (MP3)
         # SoX order: input [opts] output [opts] [effect ...] (effects come after output file)
         sox_cmd = [
@@ -334,19 +335,19 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
         if is_am:
             sox_cmd.extend(['gain', '20', 'norm', '-3'])  # +20 dB then normalize to -3 dB headroom
         
-        # Use AAC/MP4 for better iOS Safari compatibility (MP3 streaming has known issues on iOS)
+        # MP3 with iOS Safari-optimized settings: 44.1kHz, CBR, proper frame alignment
         ffmpeg_cmd = [
             'ffmpeg',
             '-fflags', '+nobuffer',  # Reduce latency so audio starts sooner
             '-flags', 'low_delay',
             '-f', 'wav',
             '-i', '-',
-            '-f', 'mp4',  # MP4 container with AAC
-            '-acodec', 'aac',  # AAC codec (better iOS Safari support than MP3)
-            '-b:a', f'{audio_bitrate}k',  # Bitrate
-            '-ar', pipeline_rate,  # Sample rate (48k - standard for mobile/web)
-            '-ac', '1',  # Mono (we're already mono from sox)
-            '-movflags', '+frag_keyframe+empty_moov',  # Streaming-friendly MP4 (required for live streaming)
+            '-f', 'mp3',
+            '-acodec', 'libmp3lame',
+            '-b:a', f'{audio_bitrate}k',  # Constant bitrate (CBR) - more reliable for streaming
+            '-ar', pipeline_rate,  # 44.1kHz (standard MP3 rate, better iOS compatibility)
+            '-ac', '1',  # Mono
+            '-write_xing', '0',  # Disable XING header (can cause iOS playback issues)
             '-'  # stdout
         ]
         
@@ -655,7 +656,7 @@ def api_stream():
     
     return Response(
         generate(),
-        mimetype='audio/mp4',  # AAC/MP4 for better iOS Safari compatibility
+        mimetype='audio/mpeg',  # MP3 format
         headers={
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -663,7 +664,7 @@ def api_stream():
             'X-Content-Type-Options': 'nosniff',
             'Connection': 'keep-alive',
             'Accept-Ranges': 'bytes',  # Helpful for iOS Safari streaming
-            'Content-Type': 'audio/mp4; codecs="mp4a.40.2"'  # Explicit AAC codec declaration
+            'Content-Type': 'audio/mpeg'  # MP3
         }
     )
 
