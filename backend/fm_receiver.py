@@ -76,7 +76,7 @@ def load_config():
         "frequency": 101500000,
         "gain": 0,  # Low gain by default to prevent overload (e.g. with high-gain antenna)
         "audio_format": "mp3",
-        "audio_bitrate": 128
+        "audio_bitrate": 64  # Lower bitrate (64k) for better iOS Safari compatibility - reduces garbling
     }
     
     if CONFIG_FILE.exists():
@@ -335,19 +335,18 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
         if is_am:
             sox_cmd.extend(['gain', '20', 'norm', '-3'])  # +20 dB then normalize to -3 dB headroom
         
-        # MP3 with iOS Safari-optimized settings: 44.1kHz, CBR, proper frame alignment
+        # MP3 with iOS Safari-optimized settings: 44.1kHz, CBR, 64k bitrate
+        # Using conservative settings to avoid garbled audio on iOS Safari
         ffmpeg_cmd = [
             'ffmpeg',
-            '-fflags', '+nobuffer',  # Reduce latency so audio starts sooner
-            '-flags', 'low_delay',
             '-f', 'wav',
             '-i', '-',
             '-f', 'mp3',
             '-acodec', 'libmp3lame',
-            '-b:a', f'{audio_bitrate}k',  # Constant bitrate (CBR) - more reliable for streaming
-            '-ar', pipeline_rate,  # 44.1kHz (standard MP3 rate, better iOS compatibility)
+            '-b:a', f'{audio_bitrate}k',  # Constant bitrate (CBR) - 64k for iOS compatibility
+            '-ar', pipeline_rate,  # 44.1kHz (standard MP3 rate)
             '-ac', '1',  # Mono
-            '-write_xing', '0',  # Disable XING header (can cause iOS playback issues)
+            '-write_xing', '0',  # Disable XING header
             '-'  # stdout
         ]
         
@@ -638,7 +637,8 @@ def api_stream():
                     stop_streaming()
                     break
                 
-                chunk = audio_process.stdout.read(8192)
+                # iOS Safari: Use 32KB chunks (balance between latency and smooth playback)
+                chunk = audio_process.stdout.read(32768)
                 if not chunk:
                     if audio_process.poll() is not None:
                         if not _stream_died_logged:
