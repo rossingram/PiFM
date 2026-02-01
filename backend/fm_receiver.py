@@ -334,18 +334,19 @@ def start_streaming(frequency=None, gain_override=None, is_retune=False):
         if is_am:
             sox_cmd.extend(['gain', '20', 'norm', '-3'])  # +20 dB then normalize to -3 dB headroom
         
+        # Use AAC/MP4 for better iOS Safari compatibility (MP3 streaming has known issues on iOS)
         ffmpeg_cmd = [
             'ffmpeg',
             '-fflags', '+nobuffer',  # Reduce latency so audio starts sooner
             '-flags', 'low_delay',
             '-f', 'wav',
             '-i', '-',
-            '-f', 'mp3',
-            '-acodec', 'libmp3lame',
-            '-b:a', f'{audio_bitrate}k',  # Constant bitrate (CBR) for mobile compatibility
+            '-f', 'mp4',  # MP4 container with AAC
+            '-acodec', 'aac',  # AAC codec (better iOS Safari support than MP3)
+            '-b:a', f'{audio_bitrate}k',  # Bitrate
             '-ar', pipeline_rate,  # Sample rate (48k - standard for mobile/web)
             '-ac', '1',  # Mono (we're already mono from sox)
-            '-write_xing', '0',  # Disable XING header (can cause mobile playback issues)
+            '-movflags', '+frag_keyframe+empty_moov',  # Streaming-friendly MP4 (required for live streaming)
             '-'  # stdout
         ]
         
@@ -654,11 +655,15 @@ def api_stream():
     
     return Response(
         generate(),
-        mimetype='audio/mpeg',
+        mimetype='audio/mp4',  # AAC/MP4 for better iOS Safari compatibility
         headers={
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
             'X-Content-Type-Options': 'nosniff',
-            'Connection': 'keep-alive'
+            'Connection': 'keep-alive',
+            'Accept-Ranges': 'bytes',  # Helpful for iOS Safari streaming
+            'Content-Type': 'audio/mp4; codecs="mp4a.40.2"'  # Explicit AAC codec declaration
         }
     )
 
