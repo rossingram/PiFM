@@ -631,32 +631,6 @@ def api_stream():
     def generate():
         global _stream_died_logged
         try:
-            # iOS Safari: Buffer initial 64KB to ensure MP3 stream is properly initialized
-            # This helps iOS Safari decode the stream correctly
-            initial_buffer = b''
-            buffer_target = 65536  # 64KB initial buffer
-            
-            # Build initial buffer
-            while len(initial_buffer) < buffer_target and is_playing and audio_process:
-                if audio_process.poll() is not None:
-                    break
-                chunk = audio_process.stdout.read(32768)
-                if not chunk:
-                    if audio_process.poll() is not None:
-                        break
-                    time.sleep(0.05)
-                    continue
-                initial_buffer += chunk
-            
-            # Send initial buffer if we have enough data
-            if len(initial_buffer) >= 16384:  # At least 16KB before starting
-                yield initial_buffer
-            else:
-                # If we don't have enough, something is wrong
-                logger.warning("Insufficient initial buffer for stream")
-                return
-            
-            # Continue streaming normally
             while is_playing and audio_process:
                 if audio_process.poll() is not None:
                     if not _stream_died_logged:
@@ -665,8 +639,8 @@ def api_stream():
                     stop_streaming()
                     break
                 
-                # Use 16KB chunks for smoother iOS Safari playback
-                chunk = audio_process.stdout.read(16384)
+                # Use 32KB chunks for smooth playback
+                chunk = audio_process.stdout.read(32768)
                 if not chunk:
                     if audio_process.poll() is not None:
                         if not _stream_died_logged:
@@ -674,7 +648,7 @@ def api_stream():
                             logger.error("Audio process terminated unexpectedly (SDR may have disconnected)")
                         stop_streaming()
                         break
-                    time.sleep(0.05)
+                    time.sleep(0.1)
                     continue
                 yield chunk
         except GeneratorExit:
